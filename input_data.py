@@ -12,9 +12,9 @@ def maybe_download(filename, work_directory):
         os.mkdir(work_directory)
     filepath = os.path.join(work_directory, filename)
     if not os.path.exists(filepath):
-        filepath, _ = urllib.urlretrieve(SOURCE_URL + filename, filepath)
+        filepath, _ = urllib.request.urlretrieve(SOURCE_URL + filename, filepath)
         statinfo = os.stat(filepath)
-        print 'Succesfully downloaded', filename, statinfo.st_size, 'bytes.'
+        print ('Succesfully downloaded', filename, statinfo.st_size, 'bytes.')
     return filepath
 
 
@@ -25,7 +25,7 @@ def _read32(bytestream):
 
 def extract_images(filename):
     """Extract the images into a 4D uint8 numpy array [index, y, x, depth]."""
-    print 'Extracting', filename
+    print ('Extracting', filename)
     with gzip.open(filename) as bytestream:
         magic = _read32(bytestream)
         if magic != 2051:
@@ -52,7 +52,7 @@ def dense_to_one_hot(labels_dense, num_classes=10):
 
 def extract_labels(filename, one_hot=False):
     """Extract the labels into a 1D uint8 numpy array [index]."""
-    print 'Extracting', filename
+    print ('Extracting', filename)
     with gzip.open(filename) as bytestream:
         magic = _read32(bytestream)
         if magic != 2049:
