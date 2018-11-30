@@ -3,6 +3,10 @@ import gzip
 import os
 import urllib
 import numpy
+import shutil
+import tempfile
+import urllib.request
+
 SOURCE_URL = 'http://yann.lecun.com/exdb/mnist/'
 
 
@@ -12,20 +16,22 @@ def maybe_download(filename, work_directory):
         os.mkdir(work_directory)
     filepath = os.path.join(work_directory, filename)
     if not os.path.exists(filepath):
-        filepath, _ = urllib.urlretrieve(SOURCE_URL + filename, filepath)
-        statinfo = os.stat(filepath)
-        print 'Succesfully downloaded', filename, statinfo.st_size, 'bytes.'
+        # Download the file from `url` and save it locally under `file_name`:
+        with urllib.request.urlopen(SOURCE_URL + filename) as response, open(filepath, 'wb') as out_file:
+               shutil.copyfileobj(response, out_file)
+               statinfo = os.stat(filepath)
+               print( 'Succesfully downloaded', filename, statinfo.st_size, 'bytes.')
     return filepath
 
 
 def _read32(bytestream):
     dt = numpy.dtype(numpy.uint32).newbyteorder('>')
-    return numpy.frombuffer(bytestream.read(4), dtype=dt)
+    return numpy.frombuffer(bytestream.read(4), dtype=dt)[0]
 
 
 def extract_images(filename):
     """Extract the images into a 4D uint8 numpy array [index, y, x, depth]."""
-    print 'Extracting', filename
+    print( 'Extracting', filename)
     with gzip.open(filename) as bytestream:
         magic = _read32(bytestream)
         if magic != 2051:
@@ -35,7 +41,10 @@ def extract_images(filename):
         num_images = _read32(bytestream)
         rows = _read32(bytestream)
         cols = _read32(bytestream)
-        buf = bytestream.read(rows * cols * num_images)
+        myv = num_images
+        myvv = rows * cols * num_images
+        #print('*GO*',int(myv), myvv, num_images,rows,cols)
+        buf = bytestream.read(myvv) #rows * cols * num_images)
         data = numpy.frombuffer(buf, dtype=numpy.uint8)
         data = data.reshape(num_images, rows, cols, 1)
         return data
@@ -52,7 +61,7 @@ def dense_to_one_hot(labels_dense, num_classes=10):
 
 def extract_labels(filename, one_hot=False):
     """Extract the labels into a 1D uint8 numpy array [index]."""
-    print 'Extracting', filename
+    print( 'Extracting', filename)
     with gzip.open(filename) as bytestream:
         magic = _read32(bytestream)
         if magic != 2049:
